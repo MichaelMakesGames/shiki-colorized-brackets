@@ -182,7 +182,7 @@ function splitBracketTokens(
         // token start in explanation range
         (tokenStart >= explanation.start && tokenStart <= explanation.end) ||
         // token end in explanation range
-        (tokenEnd >= explanation.end && tokenEnd <= explanation.end) ||
+        (tokenEnd >= explanation.start && tokenEnd <= explanation.end) ||
         // explanation start in token range
         (explanation.start >= tokenStart && explanation.start <= tokenEnd) ||
         // explanation end in token range
