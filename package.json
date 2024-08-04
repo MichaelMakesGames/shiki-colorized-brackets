@@ -1,0 +1,12 @@
+{
+  "name": "@michael-makes/shiki-colorized-brackets",
+  "module": "index.ts",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "chalk": "^5.3.0",
+    "shiki": "^1.12.1",
+    "typescript": "^5.5.4"
+  },
+  "license": "MIT",
+  "type": "module"
+}
