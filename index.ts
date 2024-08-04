@@ -1,4 +1,4 @@
-import * as shiki from "shiki";
+import type { CodeToTokensOptions, ShikiTransformer, ThemedToken } from "shiki";
 
 type Theme = "dark" | "light" | "hc-dark" | "hc-light" | "solarized-dark";
 export const colorizedBracketThemes: Record<Theme, string[]> = {
@@ -55,7 +55,7 @@ export default function shikiColorizedBrackets({
   langs = {
     html: { bracketPairs: [] },
   },
-}: Partial<ColorizedBracketsConfig> = {}): shiki.ShikiTransformer {
+}: Partial<ColorizedBracketsConfig> = {}): ShikiTransformer {
   const config: ColorizedBracketsConfig = {
     colors,
     defaultColor,
@@ -63,13 +63,12 @@ export default function shikiColorizedBrackets({
     bracketPairs,
     langs,
   };
-  const transformer: shiki.ShikiTransformer = {
+  const transformer: ShikiTransformer = {
     name: "colorizedBrackets",
     preprocess(code, options) {
       // includeExplanation is a valid option for codeToTokens
       // but is missing from the type definition here
-      (options as shiki.CodeToTokensOptions).includeExplanation = true;
-      // options.mergeWhitespaces = false;
+      (options as CodeToTokensOptions).includeExplanation = true;
     },
     tokens: function transformTokens(tokens) {
       const lang = this.options.lang;
@@ -89,10 +88,10 @@ export default function shikiColorizedBrackets({
 }
 
 function splitBracketTokens(
-  rawToken: shiki.ThemedToken,
+  rawToken: ThemedToken,
   config: ColorizedBracketsConfig,
   lang: string
-): shiki.ThemedToken[] {
+): ThemedToken[] {
   const embeddedLang = getEmbeddedLang(rawToken);
   const resolvedConfig = resolveConfig(config, embeddedLang ?? lang);
 
@@ -196,11 +195,11 @@ function splitBracketTokens(
 }
 
 function colorizeBracketTokens(
-  tokens: shiki.ThemedToken[],
+  tokens: ThemedToken[],
   config: ColorizedBracketsConfig,
   lang: string
 ) {
-  const openerStack: shiki.ThemedToken[] = [];
+  const openerStack: ThemedToken[] = [];
 
   for (const token of tokens) {
     const embeddedLang = getEmbeddedLang(token);
@@ -260,7 +259,7 @@ function colorizeBracketTokens(
 }
 
 function shouldIgnoreToken(
-  token: shiki.ThemedToken,
+  token: ThemedToken,
   scopesAllowList?: string[],
   scopesDenyList?: string[]
 ) {
@@ -365,7 +364,7 @@ function getColor(colors: string[], level: number) {
   }
 }
 
-function getEmbeddedLang(token: shiki.ThemedToken): string | undefined {
+function getEmbeddedLang(token: ThemedToken): string | undefined {
   return token.explanation?.[0].scopes
     .findLast((scope) => scope.scopeName.match(/^source.\w+$/))
     ?.scopeName.split(".")[1];
@@ -393,9 +392,9 @@ function escapeRegExp(string: string) {
 // // as is, it does not correctly work with unexpected brackets, since those can end up grouped into a single explanation
 // // for this to work, it would need to find and split brackets within an explanation
 // function splitBracketTokensUsingExplanations(
-//   rawToken: shiki.ThemedToken,
+//   rawToken: ThemedToken,
 //   allBrackets: Set<string>
-// ): shiki.ThemedToken[] {
+// ): ThemedToken[] {
 //   const explanations = rawToken.explanation;
 //   if (!explanations)
 //     throw new ShikiColorizedBracketsError(
@@ -410,7 +409,7 @@ function escapeRegExp(string: string) {
 
 //   if (!bracketExplanations.length) return [rawToken];
 
-//   const splitTokens: shiki.ThemedToken[] = [];
+//   const splitTokens: ThemedToken[] = [];
 //   for (let i = 0; i < bracketExplanations.length; i++) {
 //     const bracketExplanation = bracketExplanations[i];
 //     const bracketExplanationIndex = bracketExplanationIndexes[i];
