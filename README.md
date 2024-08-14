@@ -128,4 +128,4 @@ function first<T>(array: T[]) {
 // @colors 0=Y
 ```
 
-In the final line, there's not room underneath the `}` to annotate the color, so an explicit index `0=Y` is used after @colors.
+In the final line, there's not room underneath the `}` to annotate the color, so an explicit index `0=Y` is used after `@colors`.
