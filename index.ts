@@ -1,22 +1,21 @@
-import type { CodeToTokensOptions, ShikiTransformer, ThemedToken } from "shiki";
+import type {
+  CodeOptionsSingleTheme,
+  CodeOptionsThemes,
+  CodeToTokensOptions,
+  ShikiTransformer,
+  ThemedToken,
+} from "shiki";
+import builtInThemes from "./themes";
 
-type Theme = "dark" | "light" | "hc-dark" | "hc-light" | "solarized-dark";
-export const colorizedBracketThemes: Record<Theme, string[]> = {
-  dark: ["#FFD700", "#DA70D6", "#179FFF", "rgba(255, 18, 18, 0.8)"],
-  light: ["#0431FA", "#319331", "#7B3814", "rgba(255, 18, 18, 0.8)"],
-  "hc-dark": ["#FFD700", "#DA70D6", "#87CEFA", "rgba(255, 50, 50, 1)"],
-  // unexpected color for vscode hcLight is actually an empty string
-  // using the light theme value
-  "hc-light": ["#0431FA", "#319331", "#7B3814", "rgba(255, 18, 18, 0.8)"],
-  // vscode solarized dark does not define an unexpected color
-  // using the dark theme value
-  "solarized-dark": ["#CDCDCD", "#B58900", "#d33682", "rgba(255, 18, 18, 0.8)"],
-};
+const defaultBracketsTheme = [
+  "#FFD700",
+  "#DA70D6",
+  "#179FFF",
+  "rgba(255, 18, 18, 0.8)",
+];
 
 export interface ColorizedBracketsConfig {
-  colors: string[] | Record<string, string[]>;
-  defaultColor?: string | false;
-  cssVariablePrefix?: string;
+  themes: Record<string, string[]>;
   bracketPairs: BracketPair[];
   langs: Record<string, Partial<Omit<ColorizedBracketsConfig, "langs">>>;
 }
@@ -28,17 +27,8 @@ export interface BracketPair {
   scopesDenyList?: string[];
 }
 
-export class ShikiColorizedBracketsError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ShikiColorizedBracketsError";
-  }
-}
-
 export default function shikiColorizedBrackets({
-  colors = colorizedBracketThemes.dark,
-  defaultColor,
-  cssVariablePrefix,
+  themes = {},
   bracketPairs = [
     { opener: "[", closer: "]" },
     { opener: "{", closer: "}" },
@@ -57,9 +47,7 @@ export default function shikiColorizedBrackets({
   },
 }: Partial<ColorizedBracketsConfig> = {}): ShikiTransformer {
   const config: ColorizedBracketsConfig = {
-    colors,
-    defaultColor,
-    cssVariablePrefix,
+    themes,
     bracketPairs,
     langs,
   };
@@ -68,7 +56,7 @@ export default function shikiColorizedBrackets({
     preprocess(code, options) {
       // includeExplanation is a valid option for codeToTokens
       // but is missing from the type definition here
-      (options as CodeToTokensOptions).includeExplanation = true;
+      (options as CodeToTokensOptions).includeExplanation ||= "scopeName";
     },
     tokens: function transformTokens(tokens) {
       const lang = this.options.lang;
@@ -81,7 +69,7 @@ export default function shikiColorizedBrackets({
         tokens[lineIndex] = newLine;
       }
 
-      colorizeBracketTokens(tokens.flat(), config, lang);
+      colorizeBracketTokens(tokens.flat(), config, this.options, lang);
     },
   };
   return transformer;
@@ -95,11 +83,7 @@ function splitBracketTokens(
   const embeddedLang = getEmbeddedLang(rawToken);
   const resolvedConfig = resolveConfig(config, embeddedLang ?? lang);
 
-  if (
-    resolvedConfig.bracketPairs.length === 0 ||
-    resolvedConfig.colors.length === 0 ||
-    shouldIgnoreToken(rawToken)
-  ) {
+  if (resolvedConfig.bracketPairs.length === 0 || shouldIgnoreToken(rawToken)) {
     return [rawToken];
   }
 
@@ -197,6 +181,7 @@ function splitBracketTokens(
 function colorizeBracketTokens(
   tokens: ThemedToken[],
   config: ColorizedBracketsConfig,
+  shikiOptions: CodeOptionsThemes,
   lang: string
 ) {
   const openerStack: ThemedToken[] = [];
@@ -240,21 +225,40 @@ function colorizeBracketTokens(
         while (openerStack.at(-1) !== opener) {
           const unexpected = openerStack.pop();
           if (unexpected) {
-            unexpected.htmlStyle = getStyle(resolvedConfig, -1);
+            assignColorToToken(
+              unexpected,
+              resolvedConfig.themes,
+              shikiOptions,
+              -1
+            );
           }
         }
         openerStack.pop();
-        const style = getStyle(resolvedConfig, openerStack.length);
-        token.htmlStyle = style;
-        opener.htmlStyle = style;
+        assignColorToToken(
+          token,
+          resolvedConfig.themes,
+          shikiOptions,
+          openerStack.length
+        );
+        assignColorToToken(
+          opener,
+          resolvedConfig.themes,
+          shikiOptions,
+          openerStack.length
+        );
       } else {
-        token.htmlStyle = getStyle(resolvedConfig, -1);
+        assignColorToToken(token, resolvedConfig.themes, shikiOptions, -1);
       }
     }
   }
 
   for (const token of openerStack) {
-    token.htmlStyle = getStyle(resolveConfig(config, lang), -1);
+    assignColorToToken(
+      token,
+      resolveConfig(config, lang).themes,
+      shikiOptions,
+      -1
+    );
   }
 }
 
@@ -320,42 +324,52 @@ function shouldIgnoreToken(
   return false;
 }
 
-function getStyle(
-  config: Omit<ColorizedBracketsConfig, "langs">,
+function assignColorToToken(
+  token: ThemedToken,
+  themes: Record<string, string[]>,
+  shikiOptions: CodeOptionsThemes,
   level: number
-) {
-  const {
-    colors,
-    defaultColor = "light",
-    cssVariablePrefix = "--shiki-",
-  } = config;
-  const styles: string[] = [];
-  if (Array.isArray(colors)) {
-    styles.push(`color:${getColor(colors, level)}`);
+): void {
+  if (isSingleTheme(shikiOptions)) {
+    const themeName =
+      typeof shikiOptions.theme === "string"
+        ? shikiOptions.theme
+        : shikiOptions.theme.name;
+    token.color = getColor(themes, themeName, level);
   } else {
-    if (!Object.keys(colors).length)
-      throw new ShikiColorizedBracketsError(
-        "`colors` option must not be empty"
-      );
-    if (defaultColor) {
-      if (!colors[defaultColor])
-        throw new ShikiColorizedBracketsError(
-          `\`colors\` option must contain the defaultColor key \`${defaultColor}\``
-        );
-      styles.push(`color:${getColor(colors[defaultColor], level)}`);
+    const { defaultColor = "light", cssVariablePrefix = "--shiki-" } =
+      shikiOptions;
+    const styles: string[] = [];
+
+    for (const [colorName, theme] of Object.entries(shikiOptions.themes)) {
+      const themeName = typeof theme === "string" ? theme : theme?.name;
+      const cssProperty =
+        colorName === defaultColor
+          ? "color"
+          : `${cssVariablePrefix}${colorName}`;
+      styles.push(`${cssProperty}:${getColor(themes, themeName, level)}`);
     }
-    for (const [theme, themeColors] of Object.entries(colors)) {
-      if (theme !== defaultColor) {
-        styles.push(
-          `${cssVariablePrefix}${theme}:${getColor(themeColors, level)}`
-        );
-      }
-    }
+
+    token.htmlStyle = styles.join(";");
   }
-  return styles.join(";");
 }
 
-function getColor(colors: string[], level: number) {
+function isSingleTheme(
+  shikiOptions: CodeOptionsThemes
+): shikiOptions is CodeOptionsSingleTheme {
+  return "theme" in shikiOptions;
+}
+
+function getColor(
+  themes: Record<string, string[]>,
+  themeName: string | undefined,
+  level: number
+) {
+  const colors =
+    themeName == null
+      ? defaultBracketsTheme
+      : themes[themeName] ?? builtInThemes[themeName] ?? defaultBracketsTheme;
+
   const isUnexpected = level === -1;
   if (isUnexpected) {
     return colors[colors.length - 1];
@@ -375,10 +389,7 @@ function resolveConfig(
   lang: string
 ): Omit<ColorizedBracketsConfig, "langs"> {
   return {
-    colors: config.langs[lang]?.colors ?? config.colors,
-    defaultColor: config.langs[lang]?.defaultColor ?? config.defaultColor,
-    cssVariablePrefix:
-      config.langs[lang]?.cssVariablePrefix ?? config.cssVariablePrefix,
+    themes: config.langs[lang]?.themes ?? config.themes,
     bracketPairs: config.langs[lang]?.bracketPairs ?? config.bracketPairs,
   };
 }

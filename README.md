@@ -33,40 +33,23 @@ Here's an example of what the above code looks like when highlighted with shiki-
 
 ## Colors
 
-You can customize colors, using any valid CSS color:
+Brackets are automatically colored according to your Shiki theme (or themes if using [dual themes](https://shiki.style/guide/dual-themes)), with support for all of Shiki's built-in themes. However, you can customize colors if you've added custom themes to Shiki, or if you want to override the colors of a built-in theme:
 
 ```ts
-const transformer = shikiColorizedBrackets({
-  colors: ['goldenrod', 'blueviolet', 'dodgerblue', 'crimson'],
+const html = await codeToHtml('let values: number[] = [];', {
+  lang: 'ts',
+  theme: myCustomTheme,
+  transformers: [shikiColorizedBrackets({
+    themes: {
+      'my-custom-theme': ['goldenrod', 'blueviolet', 'dodgerblue', 'crimson'],
+    },
+  })],
 });
 ```
 
-The final color is the mismatched bracket color.
+The final color is the mismatched bracket color. The other colors are for each "level" of bracket pair. Any valid CSS color can be used.
 
-The default colors match the VSCode dark theme. Other themes are also available:
-
-```ts
-import shikiColorizedBrackets, { colorizedBracketThemes } from '@michael-makes/shiki-colorized-brackets';
-
-const transformer = shikiColorizedBrackets({
-  colors: colorizedBracketThemes.light, // or dark, hc-dark, hc-light, solarized-dark
-});
-```
-
-Dual themes are also supported, by passing in an object for colors:
-
-```ts
-import shikiColorizedBrackets, { colorizedBracketThemes } from '@michael-makes/shiki-colorized-brackets';
-
-const transformer = shikiColorizedBrackets({
-  colors: {
-    light: colorizedBracketThemes.light,
-    dark: colorizedBracketThemes.dark,
-  }
-});
-```
-
-This follows the same behavior as [Shiki dual themes](https://shiki.style/guide/dual-themes), including the ability to specify a `defaultColor` and `cssVariablePrefix`.
+If no bracket colors are found for a theme, it falls back to the default `dark-plus` theme.
 
 ## Brackets
 

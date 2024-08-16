@@ -38,7 +38,7 @@ describe("File-driven tests", async () => {
       theme: "dark-plus",
       transformers: [
         shikiColorizedBrackets({
-          colors: ["Y", "P", "B", "R"],
+          themes: { "dark-plus": ["Y", "P", "B", "R"] },
         }),
       ],
     });
@@ -69,7 +69,7 @@ describe("Bracket customization", async () => {
         theme,
         transformers: [
           shikiColorizedBrackets({
-            colors: ["Y", "P", "B", "R"],
+            themes: { "dark-plus": ["Y", "P", "B", "R"] },
           }),
         ],
       })
@@ -81,7 +81,7 @@ describe("Bracket customization", async () => {
         theme,
         transformers: [
           shikiColorizedBrackets({
-            colors: ["Y", "P", "B", "R"],
+            themes: { "dark-plus": ["Y", "P", "B", "R"] },
             bracketPairs: [
               {
                 opener: "[",
@@ -105,18 +105,24 @@ describe("Dual themes", async () => {
   const theme = "dark-plus";
   const highlighter = await createHighlighter({
     langs: [lang],
-    themes: [theme],
+    themes: [
+      "dark-plus",
+      "light-plus",
+      "red",
+      "vesper",
+      "material-theme-ocean",
+    ],
   });
 
   test("Light and dark", () => {
     const htmlStr = highlighter.codeToHtml("{}", {
       lang,
-      theme: "dark-plus",
+      themes: { light: "light-plus", dark: "dark-plus" },
       transformers: [
         shikiColorizedBrackets({
-          colors: {
-            light: ["Y", "P", "B", "R"],
-            dark: ["y", "p", "b", "r"],
+          themes: {
+            "light-plus": ["Y", "P", "B", "R"],
+            "dark-plus": ["y", "p", "b", "r"],
           },
         }),
       ],
@@ -127,14 +133,14 @@ describe("Dual themes", async () => {
   test("Custom prefix", () => {
     const htmlStr = highlighter.codeToHtml("{}", {
       lang,
-      theme: "dark-plus",
+      themes: { light: "light-plus", dark: "dark-plus" },
+      cssVariablePrefix: "--custom-",
       transformers: [
         shikiColorizedBrackets({
-          colors: {
-            light: ["Y", "P", "B", "R"],
-            dark: ["y", "p", "b", "r"],
+          themes: {
+            "light-plus": ["Y", "P", "B", "R"],
+            "dark-plus": ["y", "p", "b", "r"],
           },
-          cssVariablePrefix: "--custom-",
         }),
       ],
     });
@@ -144,14 +150,14 @@ describe("Dual themes", async () => {
   test("Custom default", () => {
     const htmlStr = highlighter.codeToHtml("{}", {
       lang,
-      theme: "dark-plus",
+      themes: { dark: "dark-plus", light: "light-plus" },
+      defaultColor: "dark",
       transformers: [
         shikiColorizedBrackets({
-          colors: {
-            light: ["Y", "P", "B", "R"],
-            dark: ["y", "p", "b", "r"],
+          themes: {
+            "light-plus": ["Y", "P", "B", "R"],
+            "dark-plus": ["y", "p", "b", "r"],
           },
-          defaultColor: "dark",
         }),
       ],
     });
@@ -161,14 +167,14 @@ describe("Dual themes", async () => {
   test("No default", () => {
     const htmlStr = highlighter.codeToHtml("{}", {
       lang,
-      theme: "dark-plus",
+      themes: { light: "light-plus", dark: "dark-plus" },
+      defaultColor: false,
       transformers: [
         shikiColorizedBrackets({
-          colors: {
-            light: ["Y", "P", "B", "R"],
-            dark: ["y", "p", "b", "r"],
+          themes: {
+            "light-plus": ["Y", "P", "B", "R"],
+            "dark-plus": ["y", "p", "b", "r"],
           },
-          defaultColor: false,
         }),
       ],
     });
@@ -180,49 +186,24 @@ describe("Dual themes", async () => {
   test("Arbitrary theme names", () => {
     const htmlStr = highlighter.codeToHtml("{}", {
       lang,
-      theme: "dark-plus",
+      themes: {
+        cool: "material-theme-ocean",
+        warm: "red",
+        grayscale: "vesper",
+      },
+      defaultColor: false,
       transformers: [
         shikiColorizedBrackets({
-          colors: {
-            cool: ["blue", "red"],
-            warm: ["yellow", "red"],
-            grayscale: ["gray", "white"],
+          themes: {
+            "material-theme-ocean": ["blue", "red"],
+            red: ["yellow", "red"],
+            vesper: ["gray", "white"],
           },
-          defaultColor: false,
         }),
       ],
     });
     expect(htmlStr).toContain(
       '<span style="--shiki-cool:blue;--shiki-warm:yellow;--shiki-grayscale:gray">{</span>'
     );
-  });
-
-  test("Throws error if colors is empty object", () => {
-    expect(() =>
-      highlighter.codeToHtml("{}", {
-        lang,
-        theme: "dark-plus",
-        transformers: [
-          shikiColorizedBrackets({
-            colors: {},
-            defaultColor: false,
-          }),
-        ],
-      })
-    ).toThrow("`colors` option must not be empty");
-  });
-
-  test("Throws error if default color is missing", () => {
-    expect(() =>
-      highlighter.codeToHtml("{}", {
-        lang,
-        theme: "dark-plus",
-        transformers: [
-          shikiColorizedBrackets({
-            colors: { dark: ["Y", "P", "B", "R"] },
-          }),
-        ],
-      })
-    ).toThrow("`colors` option must contain the defaultColor key `light`");
   });
 });
