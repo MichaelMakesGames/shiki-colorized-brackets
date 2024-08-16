@@ -102,7 +102,6 @@ describe("Bracket customization", async () => {
 
 describe("Dual themes", async () => {
   const lang = "ts";
-  const theme = "dark-plus";
   const highlighter = await createHighlighter({
     langs: [lang],
     themes: [

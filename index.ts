@@ -14,12 +14,38 @@ const defaultBracketsTheme = [
   "rgba(255, 18, 18, 0.8)",
 ];
 
+/**
+ * Colorized brackets plugin config
+ *
+ * @property themes - a record of theme names to bracket CSS colors; the final color is the unexpected bracket color
+ * @property bracketPairs - bracket pair definitions
+ * @property langs - language-specific configs that are merged with the base config
+ */
 export interface ColorizedBracketsConfig {
   themes: Record<string, string[]>;
   bracketPairs: BracketPair[];
-  langs: Record<string, Partial<Omit<ColorizedBracketsConfig, "langs">>>;
+  langs: Record<string, ColorizedBracketsLangConfig>;
 }
 
+/**
+ * Language-specific config
+ *
+ * @property themes - language-specific theme customizations; if not defined, it uses the theme customizations from the base config
+ * @property bracketPairs - language-specific bracket pairs; if not defined, it uses the bracket from the base config
+ */
+export interface ColorizedBracketsLangConfig {
+  themes?: Record<string, string[]>;
+  bracketPairs?: BracketPair[];
+}
+
+/**
+ * Defines opening and closing brackets, and allowed Textmate scopes
+ *
+ * @property opener - the string that opens a bracket pair; multi-character strings are not yet supported
+ * @property closer - the string that closes a bracket pair; multi-character strings are not yet supported
+ * @property scopesAllowList - if defined, brackets will only be colored if at least 1 of their scopes matches a scope from this list
+ * @property scopesDenyList - if defined, brackets will not be colored if any of their scopes match a scope from this list
+ */
 export interface BracketPair {
   opener: string;
   closer: string;
@@ -27,29 +53,46 @@ export interface BracketPair {
   scopesDenyList?: string[];
 }
 
-export default function shikiColorizedBrackets({
-  themes = {},
-  bracketPairs = [
-    { opener: "[", closer: "]" },
-    { opener: "{", closer: "}" },
-    { opener: "(", closer: ")" },
-    {
-      opener: "<",
-      closer: ">",
-      scopesAllowList: [
-        "punctuation.definition.typeparameters.begin.ts",
-        "punctuation.definition.typeparameters.end.ts",
-      ],
-    },
-  ],
-  langs = {
-    html: { bracketPairs: [] },
-  },
-}: Partial<ColorizedBracketsConfig> = {}): ShikiTransformer {
+/**
+ * Creates a new bracket colorizer transformer
+ *
+ * @example basic usage
+ * ```ts
+ * const html = await shiki.codeToHtml(code, {
+ *   lang: 'ts',
+ *   theme: 'dark-plus',
+ *   transformers: [shikiColorizedBrackets()],
+ * });
+ * ```
+ *
+ * @param options
+ * @param options.themes - custom themes; all Shiki built-in themes are supported without additional configuration
+ * @param options.bracketPairs - bracket definitions; be default [], {}, (), and <> (TS-only)
+ * @param options.langs - language-specific overrides for themes and bracketPairs
+ * @returns Shiki transformer
+ */
+export default function shikiColorizedBrackets(
+  options: Partial<ColorizedBracketsConfig> = {}
+): ShikiTransformer {
   const config: ColorizedBracketsConfig = {
-    themes,
-    bracketPairs,
-    langs,
+    themes: options.themes ?? {},
+    bracketPairs: options.bracketPairs ?? [
+      { opener: "[", closer: "]" },
+      { opener: "{", closer: "}" },
+      { opener: "(", closer: ")" },
+      {
+        opener: "<",
+        closer: ">",
+        scopesAllowList: [
+          "punctuation.definition.typeparameters.begin.ts",
+          "punctuation.definition.typeparameters.end.ts",
+        ],
+      },
+    ],
+    langs: {
+      html: { bracketPairs: [] },
+      ...options.langs,
+    },
   };
   const transformer: ShikiTransformer = {
     name: "colorizedBrackets",
