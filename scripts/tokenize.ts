@@ -21,7 +21,7 @@ async function main() {
   const tokens = highlighter.codeToTokens(await file(input).text(), {
     lang: lang as BundledLanguage,
     theme: "dark-plus",
-    includeExplanation: true,
+    includeExplanation: "scopeName",
   });
   write(output, JSON.stringify(tokens, undefined, 2));
 }

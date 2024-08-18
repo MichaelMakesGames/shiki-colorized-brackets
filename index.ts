@@ -86,6 +86,7 @@ export default function shikiColorizedBrackets(
         scopesAllowList: [
           "punctuation.definition.typeparameters.begin.ts",
           "punctuation.definition.typeparameters.end.ts",
+          "entity.name.type.instance.jsdoc",
         ],
       },
     ],
@@ -321,8 +322,14 @@ function shouldIgnoreToken(
       scope.scopeName.startsWith("string.")
     ) ?? -1;
   const embeddedLastIndex =
-    token.explanation?.[0].scopes.findLastIndex((scope) =>
-      scope.scopeName.startsWith("meta.embedded.")
+    token.explanation?.[0].scopes.findLastIndex(
+      (scope) =>
+        scope.scopeName.startsWith("meta.embedded.") ||
+        scope.scopeName.startsWith("scope.embedded.") ||
+        // jsdoc type declarations
+        scope.scopeName === "entity.name.type.instance.jsdoc" ||
+        // jsdoc default value declarations
+        scope.scopeName === "variable.other.jsdoc"
     ) ?? -1;
   // skip all comments and strings (but not if a deeper scope match is meta.embedded eg template expressions)
   if (
