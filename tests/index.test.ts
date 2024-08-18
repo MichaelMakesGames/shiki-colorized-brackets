@@ -1,7 +1,7 @@
-import { describe, test, expect } from "bun:test";
+import { describe, expect, test } from "bun:test";
+import { lstatSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { readdirSync, lstatSync } from "node:fs";
-import chalk from "chalk";
+import pc from "picocolors";
 import { createHighlighter } from "shiki";
 import shikiColorizedBrackets from "..";
 import {
@@ -43,7 +43,7 @@ describe("File-driven tests", async () => {
       ],
     });
     const actualBrackets = parseActualBrackets(html);
-    console.log(chalk.bold(fileName));
+    console.log(pc.bold(fileName));
     console.log("  Expected:", prettifyBrackets(expectedBrackets));
     console.log("  Actual:  ", prettifyBrackets(actualBrackets));
     expect(prettifyBrackets(actualBrackets, { noAnsi: true })).toEqual(

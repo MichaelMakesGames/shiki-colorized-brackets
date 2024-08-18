@@ -1,4 +1,4 @@
-import chalk from "chalk";
+import pc from "picocolors";
 
 interface ColoredBracket {
   bracket: string;
@@ -50,7 +50,7 @@ export function prettifyBrackets(
   brackets: ColoredBracket[],
   { noAnsi = false } = {}
 ): string {
-  if (!brackets.length) return noAnsi ? "none" : chalk.gray("none");
+  if (!brackets.length) return noAnsi ? "none" : pc.gray("none");
   return brackets
     .map((b) => getColoredBracketTerminalOutput(b, { noAnsi }))
     .join(" ");
@@ -63,13 +63,13 @@ function getColoredBracketTerminalOutput(
   const isCloser = "]})>".includes(bracket);
   if (noAnsi) return isCloser ? `${bracket}${color}` : `${color}${bracket}`;
   if (color === "R") {
-    return chalk.red(bracket);
+    return pc.red(bracket);
   } else if (color === "Y") {
-    return chalk.yellow(bracket);
+    return pc.yellow(bracket);
   } else if (color === "P") {
-    return chalk.magenta(bracket);
+    return pc.magenta(bracket);
   } else if (color === "B") {
-    return chalk.blue(bracket);
+    return pc.blue(bracket);
   } else {
     return `${color}${bracket}`;
   }
