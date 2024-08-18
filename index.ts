@@ -14,6 +14,14 @@ const defaultBracketsTheme = [
   "rgba(255, 18, 18, 0.8)",
 ];
 
+const jinjaLikeBracketPairs: BracketPair[] = [
+  { opener: "[", closer: "]" },
+  { opener: "{", closer: "}" },
+  { opener: "(", closer: ")" },
+  { opener: "{{", closer: "}}" },
+  { opener: "{%", closer: "%}" },
+];
+
 /**
  * Colorized brackets plugin config
  *
@@ -92,6 +100,8 @@ export default function shikiColorizedBrackets(
     ],
     langs: {
       html: { bracketPairs: [] },
+      jinja: { bracketPairs: jinjaLikeBracketPairs },
+      liquid: { bracketPairs: jinjaLikeBracketPairs },
       ...options.langs,
     },
   };
@@ -134,6 +144,7 @@ function splitBracketTokens(
   const bracketsRegExp = new RegExp(
     resolvedConfig.bracketPairs
       .flatMap((pair) => [pair.opener, pair.closer])
+      .sort((a, b) => b.length - a.length)
       .map(escapeRegExp)
       .join("|")
   );
@@ -329,7 +340,9 @@ function shouldIgnoreToken(
         // jsdoc type declarations
         scope.scopeName === "entity.name.type.instance.jsdoc" ||
         // jsdoc default value declarations
-        scope.scopeName === "variable.other.jsdoc"
+        scope.scopeName === "variable.other.jsdoc" ||
+        // liquid template {{ }}
+        scope.scopeName === "meta.object.liquid"
     ) ?? -1;
   // skip all comments and strings (but not if a deeper scope match is meta.embedded eg template expressions)
   if (

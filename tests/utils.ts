@@ -9,15 +9,20 @@ export function parseExpectedBrackets(content: string): ColoredBracket[] {
   const brackets: ColoredBracket[] = [];
   const lines = content.split("\n");
   const implicitIndexRegex = /[RYPB]/g;
-  const explicitIndexRegex = /\d+=[RYPB]/g;
+  const explicitIndexRegex = /(\d+)(?:\-(\d+))?=([RYPB])/g;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (line.includes("@colors")) {
       const prev = lines[i - 1];
       const [implicitIndexPart, explicitIndexPart] = line.split("@colors");
       for (const match of explicitIndexPart.matchAll(explicitIndexRegex)) {
-        const [indexStr, color] = match[0].split("=");
-        brackets.push({ bracket: prev[parseInt(indexStr)], color });
+        const start = parseInt(match[1]);
+        const end = parseInt(match[2] || match[1]) + 1;
+        const color = match[3];
+        brackets.push({
+          bracket: prev.substring(start, end),
+          color,
+        });
       }
       for (const match of implicitIndexPart.matchAll(implicitIndexRegex)) {
         const index = match.index;
@@ -31,7 +36,7 @@ export function parseExpectedBrackets(content: string): ColoredBracket[] {
 
 export function parseActualBrackets(html: string): ColoredBracket[] {
   const spanRegex =
-    /<span style="color:([RYPB])">\s*(&#x[0-9A-F]+;|.)\s*<\/span>/g;
+    /<span style="color:([RYPB])">\s*(&#x[0-9A-F]+;|..?)\s*<\/span>/g;
   const brackets = Array.from(html.matchAll(spanRegex)).map<ColoredBracket>(
     (match) => {
       const color = match[1];
@@ -60,7 +65,7 @@ function getColoredBracketTerminalOutput(
   { bracket, color }: ColoredBracket,
   { noAnsi = false } = {}
 ): string {
-  const isCloser = "]})>".includes(bracket);
+  const isCloser = ["]", "}", ")", ">", "}}", "%}"].includes(bracket);
   if (noAnsi) return isCloser ? `${bracket}${color}` : `${color}${bracket}`;
   if (color === "R") {
     return pc.red(bracket);
